@@ -1,4 +1,10 @@
-"scripts": {
-  "build": "npm run build",
-  "start": "node dist/server.js"
-}
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+region = "us-east4"
+runtime = "V2"
+numReplicas = 1
+sleepApplication = false
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
