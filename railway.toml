@@ -1,9 +1,9 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install --production=false && npx prisma generate && npm run build"
+buildCommand = "cd conduit-next && npm ci && npm install prisma --save-dev && npx prisma generate && npm run build"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "cd conduit-next && npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
@@ -13,11 +13,9 @@ numReplicas = 1
 PORT = "3000"
 NODE_ENV = "production"
 NEXTAUTH_URL = "${RAILWAY_PUBLIC_DOMAIN}"
-DATABASE_URL = "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
 NEXTAUTH_SECRET = "c2e9ad22fb0d2d70ae0420f781d192747659f3e878ecd27f22958502ff5150f4"
+DATABASE_URL = "${{Postgres.DATABASE_URL}}"
 
 [[services]]
-name = "postgres"
-type = "postgres"
-plan = "free"
-envs = { DATABASE_URL = "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}" }
+name = "conduit"
+references = ["Postgres"]

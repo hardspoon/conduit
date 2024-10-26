@@ -1,52 +1,69 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from "../../../lib/prisma"
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '../auth/[...nextauth]/route'
-import type { ArticleResponse, CreateArticleInput } from '@/types/article'
+import { authOptions } from "../../../lib/auth"
+import type { ArticleResponse, CreateArticleInput } from '../../../types/article'
 
-type ArticleWithRelations = Awaited<ReturnType<typeof getArticleWithRelations>>;
-
-interface DbUser {
+type DbUser = {
   id: string;
-  email: string;
   username: string;
-  image?: string | null;
+  bio: string | null;
+  image: string | null;
 }
 
-async function getArticleWithRelations() {
-  return await prisma.article.findFirst({
-    include: {
-      author: {
-        select: {
-          username: true,
-          bio: true,
-          image: true,
-          followers: true
-        }
-      },
-      tagList: true,
-      favoritedBy: true,
-      _count: {
-        select: { favoritedBy: true }
-      }
-    }
-  })
+type ArticleWithIncludes = {
+  id: string
+  slug: string
+  title: string
+  description: string
+  body: string
+  createdAt: Date
+  updatedAt: Date
+  authorId: string
+  favoritesCount: number
+  author: {
+    username: string
+    bio: string | null
+    image: string | null
+    followers: DbUser[]
+  }
+  tagList: { name: string }[]
+  favoritedBy: DbUser[]
+  _count: {
+    favoritedBy: number
+  }
 }
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const limit = Number(searchParams.get('limit')) || 10
-  const offset = Number(searchParams.get('offset')) || 0
   const tag = searchParams.get('tag')
+  const author = searchParams.get('author')
+  const favorited = searchParams.get('favorited')
+  const limit = parseInt(searchParams.get('limit') ?? '10')
+  const offset = parseInt(searchParams.get('offset') ?? '0')
 
-  const where = tag ? {
-    tagList: {
-      some: {
-        name: tag
+  const where = {
+    ...(author ? {
+      author: {
+        username: author
       }
-    }
-  } : {}
+    } : {}),
+    ...(favorited ? {
+      favoritedBy: {
+        some: {
+          username: favorited
+        }
+      }
+    } : {}),
+    ...(tag ? {
+      tagList: {
+        some: {
+          name: tag
+        }
+      }
+    } : {})
+  }
 
   try {
     const [articles, count] = await Promise.all([
@@ -77,7 +94,7 @@ export async function GET(request: NextRequest) {
     ])
 
     const session = await getServerSession(authOptions)
-    const articlesWithFavorited = articles.map((article: ArticleWithRelations) => ({
+    const articlesWithFavorited = articles.map((article: ArticleWithIncludes) => ({
       ...article,
       favorited: article.favoritedBy.some((user: DbUser) => user.id === session?.user?.id),
       favoritesCount: article._count.favoritedBy,
@@ -85,7 +102,7 @@ export async function GET(request: NextRequest) {
         ...article.author,
         following: article.author.followers.some((user: DbUser) => user.id === session?.user?.id)
       }
-    }))
+    })) as ArticleResponse[]
 
     return NextResponse.json({
       articles: articlesWithFavorited,
@@ -163,7 +180,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ article: articleResponse }, { status: 201 })
+    return NextResponse.json({
+      article: articleResponse
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating article:', error)
     return NextResponse.json(
