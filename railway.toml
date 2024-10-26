@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install && npx prisma generate && npm run build"
+buildCommand = "npm install --production=false && npx prisma generate && npm run build"
 
 [deploy]
 startCommand = "npm start"
@@ -12,6 +12,9 @@ numReplicas = 1
 [deploy.envs]
 PORT = "3000"
 NODE_ENV = "production"
+NEXTAUTH_URL = "${RAILWAY_PUBLIC_DOMAIN}"
+DATABASE_URL = "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
+NEXTAUTH_SECRET = "c2e9ad22fb0d2d70ae0420f781d192747659f3e878ecd27f22958502ff5150f4"
 
 [[services]]
 name = "postgres"
