@@ -1,10 +1,20 @@
 [build]
 builder = "NIXPACKS"
+buildCommand = "npm install && npx prisma generate && npm run build"
 
 [deploy]
-region = "us-east4"
-runtime = "V2"
-numReplicas = 1
-sleepApplication = false
+startCommand = "npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+numReplicas = 1
+
+[deploy.envs]
+PORT = "3000"
+NODE_ENV = "production"
+
+[[services]]
+name = "postgres"
+type = "postgres"
+plan = "free"
+envs = { DATABASE_URL = "postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}" }

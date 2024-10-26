@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+spawn npx create-next-app@latest conduit-next --typescript --tailwind --eslint --app
+expect "Would you like your code inside a `src/` directory?"
+send "yes\r"
+expect "Would you like to use Turbopack for next dev?"
+send "no\r"
+expect eof
